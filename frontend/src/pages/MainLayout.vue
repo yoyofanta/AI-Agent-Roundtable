@@ -3,12 +3,12 @@
     <router-view />
 
     <nav class="bottom-nav">
-      <router-link class="nav-item" to="/app/tree-hole?view=content">
-        🎬 内容
-      </router-link>
-
       <router-link class="nav-item" to="/app/tree-hole?view=roundtable">
         🤖 圆桌
+      </router-link>
+
+      <router-link class="nav-item" to="/app/tree-hole?view=content">
+        🎬 内容
       </router-link>
 
       <router-link class="nav-item" to="/app/tree-hole?view=rag">

@@ -8,7 +8,7 @@ import DiaryEditPage from './pages/DiaryEditPage.vue'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/app/diary'
+    redirect: '/login'
   },
   {
     path: '/login',
@@ -21,21 +21,16 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/app',
     component: MainLayout,
+    redirect: {
+      path: '/app/tree-hole',
+      query: {
+        view: 'roundtable'
+      }
+    },
+    meta: {
+      requiresAuth: true
+    },
     children: [
-      {
-        path: '',
-        redirect: '/app/diary'
-      },
-      {
-        path: 'diary',
-        name: 'Diary',
-        component: () => import('./pages/DiaryPage.vue')
-      },
-      {
-        path: 'diary/edit',
-        name: 'DiaryEdit',
-        component: DiaryEditPage
-      },
       {
         path: 'tree-hole',
         name: 'TreeHole',
@@ -45,6 +40,18 @@ const routes: RouteRecordRaw[] = [
         path: 'profile',
         name: 'Profile',
         component: () => import('./pages/ProfilePage.vue')
+      },
+
+      // 旧功能保留，但不作为新项目主入口
+      {
+        path: 'diary',
+        name: 'Diary',
+        component: () => import('./pages/DiaryPage.vue')
+      },
+      {
+        path: 'diary/edit',
+        name: 'DiaryEdit',
+        component: DiaryEditPage
       }
     ]
   }
@@ -58,13 +65,20 @@ const router = createRouter({
 router.beforeEach((to) => {
   const token = localStorage.getItem('token')
 
-  if (!token && to.path !== '/login') {
+  if (!token && to.path.startsWith('/app')) {
     return '/login'
   }
 
   if (token && to.path === '/login') {
-    return '/app/diary'
+    return {
+      path: '/app/tree-hole',
+      query: {
+        view: 'roundtable'
+      }
+    }
   }
+
+  return true
 })
 
 export default router

@@ -73,3 +73,10 @@ def test_14_content_analyze_tool():
 
 def test_15_content_agent_roundtable():
     client.test_content_agent_roundtable()
+
+def test_16_mbti_gender_roundtable():
+    client.test_mbti_gender_roundtable()
+
+
+def test_17_custom_agent_roundtable():
+    client.test_custom_agent_roundtable()

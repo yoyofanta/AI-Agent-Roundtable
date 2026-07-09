@@ -167,19 +167,105 @@
           <span class="count-pill">已选 {{ selectedAgents.length }} / 4</span>
         </div>
 
-        <div class="agent-grid">
-          <button
-            v-for="agent in allAgents"
-            :key="agent.code"
-            class="agent-card"
-            :class="{ selected: selectedAgentCodes.includes(agent.code) }"
-            @click="toggleAgent(agent.code)"
-          >
-            <span>{{ agent.icon }}</span>
-            <strong>{{ agent.name }}</strong>
-            <p>{{ agent.role }}</p>
-          </button>
-        </div>
+        <div class="roundtable-tools">
+  <button class="ghost-btn" @click="showCustomEditor = !showCustomEditor">
+    {{ showCustomEditor ? '收起自定义角色' : '+ 新建人格 / 角色' }}
+  </button>
+
+  <span class="tool-hint">
+    默认提供 16 型人格，可设置男 / 女 / 不限；也可以创建自定义 Agent 参与圆桌。
+  </span>
+</div>
+
+<div v-if="showCustomEditor" class="custom-editor">
+  <div class="form-grid">
+    <label>
+      角色名称
+      <input v-model="customForm.name" placeholder="例如：冷静女编剧 / 毒舌运营 / 温柔男主顾问" />
+    </label>
+
+    <label>
+      参考人格
+      <select v-model="customForm.baseCode">
+        <option v-for="agent in mbtiAgents" :key="agent.code" :value="agent.code">
+          {{ agent.code }} {{ agent.name }}
+        </option>
+      </select>
+    </label>
+
+    <label>
+      性别设定
+      <select v-model="customForm.gender">
+        <option value="不限">不限</option>
+        <option value="男">男</option>
+        <option value="女">女</option>
+      </select>
+    </label>
+
+    <label>
+      头像符号
+      <input v-model="customForm.icon" placeholder="例如：✨ / 🎭 / 🧠" />
+    </label>
+  </div>
+
+  <label class="block-label">
+    角色设定
+    <textarea
+      v-model="customForm.role"
+      rows="4"
+      placeholder="例如：你是一位擅长短剧冲突设计的女性编剧，说话直接，喜欢从人物动机和反转节奏出发提出建议。"
+    />
+  </label>
+
+  <div class="actions-row">
+    <button class="primary-btn" @click="saveCustomAgent">保存并加入圆桌</button>
+    <button class="ghost-btn" @click="showCustomEditor = false">取消</button>
+  </div>
+</div>
+
+<div class="agent-grid">
+  <div
+    v-for="agent in allAgents"
+    :key="agent.code"
+    class="agent-card"
+    :class="{ selected: selectedAgentCodes.includes(agent.code) }"
+    @click="toggleAgent(agent.code)"
+  >
+    <span>{{ agent.icon }}</span>
+    <strong>{{ agent.source === 'custom' ? agent.name : `${agent.code} ${agent.name}` }}</strong>
+    <p>{{ agent.role }}</p>
+
+    <div v-if="agent.source !== 'custom'" class="gender-row" @click.stop>
+      <button
+        type="button"
+        :class="{ active: getAgentGender(agent.code) === '不限' }"
+        @click="setAgentGender(agent.code, '不限')"
+      >
+        不限
+      </button>
+      <button
+        type="button"
+        :class="{ active: getAgentGender(agent.code) === '男' }"
+        @click="setAgentGender(agent.code, '男')"
+      >
+        男
+      </button>
+      <button
+        type="button"
+        :class="{ active: getAgentGender(agent.code) === '女' }"
+        @click="setAgentGender(agent.code, '女')"
+      >
+        女
+      </button>
+    </div>
+
+    <div v-else class="custom-actions" @click.stop>
+      <span class="custom-pill">自定义</span>
+      <button type="button" @click="deleteCustomAgent(agent.code)">删除</button>
+    </div>
+  </div>
+</div>
+
 
         <label class="block-label">
           圆桌议题
@@ -290,11 +376,16 @@ import { useRoute, useRouter } from 'vue-router'
 
 type ViewType = 'home' | 'content' | 'roundtable' | 'rag' | 'memory'
 
+type AgentGender = '不限' | '男' | '女'
+type AgentSource = 'preset' | 'custom'
+
 type Agent = {
   code: string
   name: string
   icon: string
   role: string
+  gender?: AgentGender
+  source?: AgentSource
 }
 
 type RoundtableMessage = {
@@ -336,7 +427,7 @@ const contentForm = reactive({
 })
 
 const roundtableTopic = ref('我想做一个追妻火葬场题材的漫剧，需要帮我拆解剧情、对白、节奏和运营标题。')
-const selectedAgentCodes = ref<string[]>(['PLOT', 'DIALOGUE', 'RHYTHM', 'OPS'])
+const selectedAgentCodes = ref<string[]>(['INTJ', 'INFP', 'ENTJ', 'ENFP'])
 
 const messages = ref<RoundtableMessage[]>([])
 const summary = ref('')
@@ -379,16 +470,48 @@ const contentAgents: Agent[] = [
 ]
 
 const mbtiAgents: Agent[] = [
-  { code: 'INTJ', name: 'INTJ 理性规划者', icon: '🧠', role: '拆解问题、制定计划' },
-  { code: 'INFP', name: 'INFP 温柔共情者', icon: '🌙', role: '理解感受、接住情绪' },
-  { code: 'ENFP', name: 'ENFP 行动鼓励者', icon: '☀️', role: '点燃动力、提供鼓励' },
-  { code: 'ISTJ', name: 'ISTJ 稳妥执行者', icon: '📘', role: '重视步骤、稳定推进' }
+  { code: 'INTJ', name: '冷静规划师', icon: '🧠', role: '擅长理性规划、结构拆解、长期策略和目标管理', source: 'preset' },
+  { code: 'INTP', name: '逻辑研究员', icon: '🔍', role: '擅长逻辑推演、概念分析、发现问题本质', source: 'preset' },
+  { code: 'ENTJ', name: '目标指挥官', icon: '🚀', role: '擅长目标拆解、决策推进、资源整合和结果导向', source: 'preset' },
+  { code: 'ENTP', name: '灵感辩手', icon: '⚡', role: '擅长提出新角度、反向思考、创意发散和观点碰撞', source: 'preset' },
+
+  { code: 'INFJ', name: '深度洞察者', icon: '🌿', role: '擅长洞察情绪、理解深层动机、关注长期意义', source: 'preset' },
+  { code: 'INFP', name: '温柔共情者', icon: '🌙', role: '擅长共情、价值感表达、情绪接纳和人物内心分析', source: 'preset' },
+  { code: 'ENFJ', name: '共情引导者', icon: '🫂', role: '擅长关系协调、情绪引导、鼓励表达和团队氛围建设', source: 'preset' },
+  { code: 'ENFP', name: '行动鼓励者', icon: '☀️', role: '擅长激发灵感、提供鼓励、发现可能性和推动行动', source: 'preset' },
+
+  { code: 'ISTJ', name: '稳妥执行者', icon: '📘', role: '擅长步骤规划、稳定执行、规则意识和细节检查', source: 'preset' },
+  { code: 'ISFJ', name: '温和守护者', icon: '🕯️', role: '擅长照顾细节、稳定支持、关系维护和风险提醒', source: 'preset' },
+  { code: 'ESTJ', name: '执行管理者', icon: '📋', role: '擅长流程管理、效率优化、任务分配和落地执行', source: 'preset' },
+  { code: 'ESFJ', name: '氛围照顾者', icon: '🤝', role: '擅长关注关系、照顾感受、组织协作和反馈沟通', source: 'preset' },
+
+  { code: 'ISTP', name: '冷静实干者', icon: '🛠️', role: '擅长现实分析、快速判断、解决具体问题和动手实践', source: 'preset' },
+  { code: 'ISFP', name: '感受创作者', icon: '🎨', role: '擅长审美表达、情绪氛围、细腻感受和内容风格设计', source: 'preset' },
+  { code: 'ESTP', name: '现实行动者', icon: '🏃', role: '擅长快速试错、现实判断、冲突处理和即时行动', source: 'preset' },
+  { code: 'ESFP', name: '氛围带动者', icon: '🎭', role: '擅长情绪感染、表达张力、舞台感和用户吸引力', source: 'preset' }
 ]
 
-const allAgents = computed(() => [...contentAgents, ...mbtiAgents])
+const customAgents = ref<Agent[]>([])
+const showCustomEditor = ref(false)
+
+const customForm = reactive({
+  name: '',
+  baseCode: 'INFJ',
+  gender: '不限' as AgentGender,
+  icon: '✨',
+  role: ''
+})
+
+const agentGenderMap = reactive<Record<string, AgentGender>>({})
+
+const allAgents = computed(() => {
+  return [...mbtiAgents, ...customAgents.value]
+})
 
 const selectedAgents = computed(() => {
-  return allAgents.value.filter(agent => selectedAgentCodes.value.includes(agent.code))
+  return allAgents.value
+    .filter(agent => selectedAgentCodes.value.includes(agent.code))
+    .map(agent => withGenderSetting(agent))
 })
 
 function getCurrentUserKey() {
@@ -439,6 +562,7 @@ watch(
 
 onMounted(() => {
   loadSessions()
+  loadCustomAgents()
 })
 
 function loadSessions() {
@@ -460,7 +584,7 @@ function newRoundtable() {
   messages.value = []
   summary.value = ''
   roundtableTopic.value = ''
-  selectedAgentCodes.value = ['PLOT', 'DIALOGUE']
+  selectedAgentCodes.value = ['INTJ', 'INFP']
 }
 
 function openSession(id: number) {
@@ -512,6 +636,99 @@ function toggleAgent(code: string) {
   }
 
   selectedAgentCodes.value.push(code)
+}
+
+function withGenderSetting(agent: Agent): Agent {
+  if (agent.source === 'custom') {
+    return agent
+  }
+
+  const gender = agentGenderMap[agent.code] || agent.gender || '不限'
+  const genderText = gender === '不限' ? '不限性别' : `${gender}性`
+
+  return {
+    ...agent,
+    gender,
+    name: `${agent.code} ${agent.name}`,
+    role: `${agent.role}。角色性别设定：${genderText}。请在圆桌发言中保持该角色身份、语气和视角。`
+  }
+}
+
+function setAgentGender(code: string, gender: AgentGender) {
+  agentGenderMap[code] = gender
+}
+
+function getAgentGender(code: string) {
+  return agentGenderMap[code] || '不限'
+}
+
+function getCustomAgentStorageKey() {
+  return `moodboard_custom_roundtable_agents_${getCurrentUserKey()}`
+}
+
+function loadCustomAgents() {
+  try {
+    const raw = localStorage.getItem(getCustomAgentStorageKey())
+    customAgents.value = raw ? JSON.parse(raw) : []
+  } catch (e) {
+    console.warn('读取自定义角色失败', e)
+    customAgents.value = []
+  }
+}
+
+function saveCustomAgents() {
+  localStorage.setItem(getCustomAgentStorageKey(), JSON.stringify(customAgents.value))
+}
+
+function saveCustomAgent() {
+  if (!customForm.name.trim()) {
+    alert('请输入角色名称')
+    return
+  }
+
+  if (!customForm.role.trim()) {
+    alert('请输入角色设定')
+    return
+  }
+
+  const base = mbtiAgents.find(item => item.code === customForm.baseCode)
+
+  const agent: Agent = {
+    code: `CUSTOM_${Date.now()}`,
+    name: customForm.name.trim(),
+    icon: customForm.icon || '✨',
+    gender: customForm.gender,
+    source: 'custom',
+    role:
+      `这是一个用户自定义 Agent。` +
+      `参考基础人格：${base ? base.code + ' ' + base.name : customForm.baseCode}。` +
+      `性别设定：${customForm.gender}。` +
+      `具体角色设定：${customForm.role.trim()}。` +
+      `请严格按照该角色设定参与圆桌讨论。`
+  }
+
+  customAgents.value.unshift(agent)
+  saveCustomAgents()
+
+  if (!selectedAgentCodes.value.includes(agent.code)) {
+    if (selectedAgentCodes.value.length >= 4) {
+      selectedAgentCodes.value.shift()
+    }
+
+    selectedAgentCodes.value.push(agent.code)
+  }
+
+  customForm.name = ''
+  customForm.role = ''
+  customForm.gender = '不限'
+  customForm.icon = '✨'
+  showCustomEditor.value = false
+}
+
+function deleteCustomAgent(code: string) {
+  customAgents.value = customAgents.value.filter(item => item.code !== code)
+  selectedAgentCodes.value = selectedAgentCodes.value.filter(item => item !== code)
+  saveCustomAgents()
 }
 
 function clearCurrent() {
@@ -1162,12 +1379,6 @@ textarea:focus {
   background: white;
 }
 
-.agent-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
-}
 
 .agent-card {
   border: 2px solid transparent;
@@ -1304,6 +1515,89 @@ textarea:focus {
   margin-bottom: 10px;
   color: #9b8d7d;
   font-weight: 700;
+}
+
+
+.roundtable-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.tool-hint {
+  color: #92887c;
+  font-size: 14px;
+}
+
+.custom-editor {
+  margin-bottom: 20px;
+  padding: 22px;
+  border-radius: 28px;
+  background: #fffaf2;
+  border: 1px solid #eadcc6;
+}
+
+select {
+  width: 100%;
+  border: 1px solid #eee4d7;
+  outline: none;
+  border-radius: 20px;
+  padding: 14px 16px;
+  background: #fbf8f3;
+  color: #2d2d2d;
+  font-size: 15px;
+}
+
+.gender-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.gender-row button {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #f1eadf;
+  color: #7b6b5c;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.gender-row button.active {
+  background: #c6aa82;
+  color: white;
+  font-weight: 700;
+}
+
+.custom-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.custom-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eaf3ee;
+  color: #5d806d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.custom-actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #f5dede;
+  color: #9b5048;
+  cursor: pointer;
+  font-size: 12px;
 }
 
 @media (max-width: 1100px) {

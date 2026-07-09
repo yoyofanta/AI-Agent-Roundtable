@@ -9,7 +9,7 @@ import json
 import requests
 
 
-BASE_URL = "http://localhost:8888/api"
+BASE_URL = "http://localhost:8889/api"
 
 
 class ApiTestClient:
@@ -368,6 +368,98 @@ class ApiTestClient:
 
         print("✅ Tool Calling 内容分析工具通过")
 
+            # 16. 16型人格 + 性别设定圆桌
+    def test_mbti_gender_roundtable(self):
+        self.print_title("API-016 16型人格与性别设定圆桌")
+
+        url = f"{BASE_URL}/ai/agent/roundtable"
+
+        payload = {
+            "topic": "我想做一个追妻火葬场题材的漫剧，女主被误会后离开，男主后期追悔莫及。请从剧情结构、人物情绪、创意反转和落地执行角度帮我讨论。",
+            "agents": [
+                {
+                    "code": "INTJ",
+                    "name": "INTJ 冷静规划师",
+                    "role": "擅长理性规划、结构拆解、长期策略和目标管理。角色性别设定：男性。"
+                },
+                {
+                    "code": "INFP",
+                    "name": "INFP 温柔共情者",
+                    "role": "擅长共情、价值感表达、情绪接纳和人物内心分析。角色性别设定：女性。"
+                },
+                {
+                    "code": "ENTP",
+                    "name": "ENTP 灵感辩手",
+                    "role": "擅长提出新角度、反向思考、创意发散和观点碰撞。角色性别设定：不限性别。"
+                },
+                {
+                    "code": "ESTJ",
+                    "name": "ESTJ 执行管理者",
+                    "role": "擅长流程管理、效率优化、任务分配和落地执行。角色性别设定：男性。"
+                }
+            ]
+        }
+
+        response = requests.post(url, json=payload, headers=self.get_headers())
+        self.print_response(response)
+
+        self.assert_status_ok(response, "16型人格与性别设定圆桌")
+
+        data = self.extract_data(response)
+        agents = data.get("agents", [])
+
+        assert len(agents) == 4, "人格圆桌失败：Agent 数量不是 4"
+        assert data.get("summary"), "人格圆桌失败：缺少 summary"
+
+        agent_codes = [item.get("agentCode") for item in agents]
+
+        assert "INTJ" in agent_codes, "缺少 INTJ"
+        assert "INFP" in agent_codes, "缺少 INFP"
+        assert "ENTP" in agent_codes, "缺少 ENTP"
+        assert "ESTJ" in agent_codes, "缺少 ESTJ"
+
+        print("✅ 16型人格与性别设定圆桌通过")
+
+            # 17. 自定义角色 Agent 圆桌
+    def test_custom_agent_roundtable(self):
+        self.print_title("API-017 自定义角色 Agent 圆桌")
+
+        url = f"{BASE_URL}/ai/agent/roundtable"
+
+        payload = {
+            "topic": "我想优化一个短视频漫剧选题：女主被误会后离开，男主多年后发现真相。请从剧情、角色和运营角度给建议。",
+            "agents": [
+                {
+                    "code": "CUSTOM_FEMALE_WRITER",
+                    "name": "冷静女编剧 Agent",
+                    "role": "这是一个用户自定义 Agent。参考基础人格：INTJ 冷静规划师。性别设定：女。具体角色设定：你是一位擅长短剧冲突设计的女性编剧，说话直接，喜欢从人物动机、误会反转和分集节奏出发提出建议。"
+                },
+                {
+                    "code": "INFP",
+                    "name": "INFP 温柔共情者",
+                    "role": "擅长共情、价值感表达、情绪接纳和人物内心分析。角色性别设定：不限性别。"
+                }
+            ]
+        }
+
+        response = requests.post(url, json=payload, headers=self.get_headers())
+        self.print_response(response)
+
+        self.assert_status_ok(response, "自定义角色 Agent 圆桌")
+
+        data = self.extract_data(response)
+        agents = data.get("agents", [])
+
+        assert len(agents) == 2, "自定义角色圆桌失败：Agent 数量不是 2"
+        assert data.get("summary"), "自定义角色圆桌失败：缺少 summary"
+
+        agent_codes = [item.get("agentCode") for item in agents]
+
+        assert "CUSTOM_FEMALE_WRITER" in agent_codes, "缺少自定义角色 Agent"
+        assert "INFP" in agent_codes, "缺少 INFP Agent"
+
+        print("✅ 自定义角色 Agent 圆桌通过")
+
         # 15. 内容生产 Agent 圆桌
     def test_content_agent_roundtable(self):
         self.print_title("API-015 内容生产 Agent 圆桌")
@@ -443,6 +535,8 @@ def run_all_tests():
         client.test_clear_memory,
         client.test_content_analyze_tool,
         client.test_content_agent_roundtable,
+        client.test_mbti_gender_roundtable,
+        client.test_custom_agent_roundtable,
     ]
 
     passed = 0

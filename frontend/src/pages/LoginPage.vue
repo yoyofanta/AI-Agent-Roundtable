@@ -178,7 +178,7 @@ async function login() {
     }
 
     saveLoginState(token, form.username)
-    router.push('/app/diary')
+    router.push('/app/tree-hole?view=roundtable')
   } catch (e) {
     console.error(e)
     alert('登录失败，请检查账号或密码')
@@ -212,7 +212,7 @@ async function register() {
     saveLoginState(token, form.username)
 
     alert('注册成功，已自动登录')
-    router.push('/app/diary')
+    router.push('/app/tree-hole?view=roundtable')
   } catch (e: any) {
     console.error(e)
 
@@ -266,7 +266,7 @@ async function guestLogin() {
       console.warn('游客默认资料保存失败，不影响登录', e)
     }
 
-    router.push('/app/diary')
+    router.push('/app/tree-hole?view=roundtable')
   } catch (e: any) {
     console.error(e)
 

@@ -33,6 +33,6 @@ async function save() {
     ...form,
     gender: form.gender || '未透露'
   })
-  router.push('/app/diary')
+  router.push('/app/tree-hole?view=content')
 }
 </script>
