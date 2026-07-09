@@ -2,10 +2,10 @@
   <div class="login-page">
     <!-- 顶部欢迎卡片 -->
     <section class="hero-card">
-      <p class="hero-subtitle">MoodBoard × MBTI</p>
-      <h1 class="hero-title">欢迎回到树洞</h1>
+      <p class="hero-subtitle">AI Agent Roundtable</p>
+      <h1 class="hero-title">AI Agent 多角色圆桌系统</h1>
       <p class="hero-desc">
-        记录情绪，选择人格朋友，开启一场温柔的内心对话。
+        创建人格角色，开启多 Agent 协作对谈
       </p>
     </section>
 
@@ -69,7 +69,7 @@
       </button>
 
       <p class="tip-text">
-        支持测试环境与联调环境切换，便于功能测试、接口测试和回归验证。
+        支持多 Agent 圆桌、RAG 知识增强、Memory 记忆和 Tool Calling 工具调用，便于 AI Agent 应用演示与测试
       </p>
     </section>
   </div>

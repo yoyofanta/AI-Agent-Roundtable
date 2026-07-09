@@ -22,14 +22,11 @@ const routes: RouteRecordRaw[] = [
     path: '/app',
     component: MainLayout,
     redirect: {
-      path: '/app/tree-hole',
-      query: {
-        view: 'roundtable'
-      }
-    },
-    meta: {
-      requiresAuth: true
-    },
+  path: '/app/tree-hole',
+  query: {
+    view: 'content'
+  }
+},
     children: [
       {
         path: 'tree-hole',
@@ -42,7 +39,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./pages/ProfilePage.vue')
       },
 
-      // 旧功能保留，但不作为新项目主入口
+      // 旧功能保留，但不作为主入口
       {
         path: 'diary',
         name: 'Diary',
@@ -65,17 +62,20 @@ const router = createRouter({
 router.beforeEach((to) => {
   const token = localStorage.getItem('token')
 
-  if (!token && to.path.startsWith('/app')) {
-    return '/login'
+  /**
+   * 登录页永远允许访问。
+   * 即使本地有 token，也不要自动跳过登录页。
+   * 这样打开 http://localhost:5174 会先看到登录 / 注册界面。
+   */
+  if (to.path === '/login') {
+    return true
   }
 
-  if (token && to.path === '/login') {
-    return {
-      path: '/app/tree-hole',
-      query: {
-        view: 'roundtable'
-      }
-    }
+  /**
+   * 访问 app 页面时必须登录。
+   */
+  if (to.path.startsWith('/app') && !token) {
+    return '/login'
   }
 
   return true

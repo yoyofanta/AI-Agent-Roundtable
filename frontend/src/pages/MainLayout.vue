@@ -3,10 +3,6 @@
     <router-view />
 
     <nav class="bottom-nav">
-      <router-link class="nav-item" to="/app/tree-hole?view=roundtable">
-        🤖 圆桌
-      </router-link>
-
       <router-link class="nav-item" to="/app/tree-hole?view=content">
         🎬 内容
       </router-link>
@@ -37,10 +33,10 @@
   left: 50%;
   bottom: 24px;
   z-index: 50;
-  width: min(92vw, 680px);
+  width: min(92vw, 520px);
   transform: translateX(-50%);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   padding: 8px;
   border-radius: 999px;
