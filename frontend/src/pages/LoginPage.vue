@@ -178,7 +178,7 @@ async function login() {
     }
 
     saveLoginState(token, form.username)
-    router.push('/app/tree-hole?view=roundtable')
+    router.push('/app/tree-hole?view=content')
   } catch (e) {
     console.error(e)
     alert('登录失败，请检查账号或密码')

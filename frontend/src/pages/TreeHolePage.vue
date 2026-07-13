@@ -237,17 +237,26 @@
         </button>
 
         <div class="session-list">
-          <button
-            v-for="session in sessions"
-            :key="session.id"
-            class="session-card"
-            :class="{ active: activeSession?.id === session.id }"
-            @click="selectSession(session.id)"
-          >
-            <strong>{{ session.title }}</strong>
-            <span>{{ session.createdAt }}</span>
-          </button>
-        </div>
+  <div
+    v-for="session in sessions"
+    :key="session.id"
+    class="session-card"
+    :class="{ active: activeSession?.id === session.id }"
+    @click="selectSession(session.id)"
+  >
+    <button
+      type="button"
+      class="session-delete-btn"
+      title="删除会话"
+      @click.stop="deleteSession(session.id)"
+    >
+      ×
+    </button>
+
+    <strong>{{ session.title || '新的 Agent 圆桌' }}</strong>
+    <span>{{ session.createdAt }}</span>
+  </div>
+</div>
       </aside>
 
       <section class="main-panel">
@@ -623,7 +632,7 @@ http.interceptors.request.use(config => {
 })
 
 const loading = ref(false)
-const view = ref<PageView>(resolveView(route.query.view))
+const view = ref<PageView>('content')
 const contentMode = ref<ContentMode>('choice')
 
 const roundtableSummaryToContent = ref('')
@@ -854,6 +863,12 @@ function goView(next: PageView) {
 
   if (next === 'content') {
     contentMode.value = 'choice'
+
+    // 进入内容生产首页时，清空旧生成状态，防止还停留在上次的直接生成页
+    roundtableSummaryToContent.value = ''
+    fromRoundtable.value = false
+    toolResult.value = null
+    scriptResult.value = ''
   }
 
   router.replace({
@@ -863,7 +878,6 @@ function goView(next: PageView) {
     }
   })
 }
-
 function openDirectContent() {
   view.value = 'content'
   contentMode.value = 'direct'
@@ -952,6 +966,32 @@ function saveSessions() {
   localStorage.setItem(getSessionStorageKey(), JSON.stringify(sessions.value))
 }
 
+function deleteSession(sessionId: string | number) {
+  const ok = window.confirm('确定要删除这个圆桌会话吗？')
+  if (!ok) return
+
+  const targetId = String(sessionId)
+
+  const index = sessions.value.findIndex((item) => String(item.id) === targetId)
+  if (index === -1) return
+
+  const wasActive = activeSession.value
+    ? String(activeSession.value.id) === targetId
+    : false
+
+  sessions.value.splice(index, 1)
+  saveSessions()
+
+  if (wasActive) {
+    const nextSession = sessions.value[index] || sessions.value[index - 1]
+
+    if (nextSession) {
+      selectSession(nextSession.id)
+    } else {
+      newRoundtable()
+    }
+  }
+}
 function newRoundtable() {
   const session: RoundtableSession = {
     id: Date.now(),
@@ -2263,6 +2303,38 @@ textarea {
   font-size: 13px;
 }
 
+
+.session-card {
+  position: relative;
+  cursor: pointer;
+}
+
+.session-card strong {
+  display: block;
+  padding-right: 34px;
+}
+
+.session-delete-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(120, 96, 68, 0.14);
+  color: #7b6144;
+  font-size: 18px;
+  line-height: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.session-delete-btn:hover {
+  background: #c9a36f;
+  color: #fff;
+  transform: scale(1.05);
+}
 @media (max-width: 1100px) {
   .page-grid {
     grid-template-columns: 1fr;
